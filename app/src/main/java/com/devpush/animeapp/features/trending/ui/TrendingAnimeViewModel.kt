@@ -16,11 +16,8 @@ class TrendingAnimeViewModel(private val repository: TrendingAnimeRepository) : 
     private var _uiState = MutableStateFlow<TrendingAnimeUiState>(TrendingAnimeUiState.Idle)
     val uiState = _uiState.asStateFlow()
 
-    private val _selectedCategory = MutableStateFlow(AnimeCategory.ALL)
-    val selectedCategory = _selectedCategory.asStateFlow()
-
     init {
-        fetchTrendingAnimeFromServer(animeCategory = AnimeCategory.TRENDING)
+        fetchTrendingAnimeFromServer()
         viewModelScope.launch(Dispatchers.IO) {
             repository.getAnimeFromDb().collect { animeList ->
                 if (animeList.isNotEmpty()) {
@@ -35,18 +32,10 @@ class TrendingAnimeViewModel(private val repository: TrendingAnimeRepository) : 
         }
     }
 
-    fun onCategorySelected(category: AnimeCategory) {
-        _selectedCategory.value = category
-        fetchTrendingAnimeFromServer(animeCategory = category)
-    }
-
-    private fun fetchTrendingAnimeFromServer(animeCategory: AnimeCategory) {
+    private fun fetchTrendingAnimeFromServer() {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = TrendingAnimeUiState.Loading
-            val apiResult = when (animeCategory) {
-                AnimeCategory.TRENDING -> repository.getTrendingAnime()
-                AnimeCategory.ALL -> repository.getAllAnime()
-            }
+            val apiResult = repository.getTrendingAnime()
             when (apiResult) {
                 is NetworkResult.Loading -> {
                 }
@@ -84,7 +73,7 @@ class TrendingAnimeViewModel(private val repository: TrendingAnimeRepository) : 
     }
 
     fun retryFetchTrendingAnime() {
-        fetchTrendingAnimeFromServer(animeCategory = _selectedCategory.value)
+        fetchTrendingAnimeFromServer()
     }
 
     fun starAnime(animeId: String, isCurrentlyFavorite: Boolean) {
